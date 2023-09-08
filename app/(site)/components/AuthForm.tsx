@@ -1,167 +1,208 @@
 'use client';
 
-import Button from "@/app/components/Button";
-import Input from "@/app/components/inputs/input";
-import { data } from "autoprefixer";
-
-
-import { useCallback, useState } from "react";
-
-import {BsGithub} from 'react-icons/bs'
-import {BsGoogle} from 'react-icons/bs'
-
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 
+
+import {BsGithub, BsGoogle} from 'react-icons/bs'
+import axios from "axios";
+import Input from "@/app/components/inputs/Input";
+import Button from "@/app/components/Button";
 import AuthSocialButton from "./AuthSocialButton";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
-type variant = 'LOGIN'| 'REGISTER';
+type Variant = 'LOGIN'| 'REGISTER';
 
-const AuthForm = () =>{
-    const [variant,setVariant]=useState<variant>('LOGIN');
-    const [isLoading,setIsLoading] = useState(false);
+const AuthForm = ()=>{
+    const session = useSession();
+    const router = useRouter();
+    const [variant,setVariant]=useState<Variant>('LOGIN');
+    const [IsLoading,setIsLoading]=useState(false);
 
-    const toggleVariant = useCallback(()=>
-    { 
-        if (variant=='LOGIN'){
-            setVariant('REGISTER');
-        }else{
-            setVariant('LOGIN');
-        }
+    useEffect(()=>{
+      if (session?.status=='authenticated'){
+        router.push('/users')
+      }
+      },
+    [session?.status,router]);
+    
+    const togglevariant = useCallback(()=>{
+      if (variant=='LOGIN'){
+        setVariant('REGISTER');
+      } else{
+        setVariant('LOGIN');
+      } 
     },[variant]);
-    const {
+     
+    const{
         register,
         handleSubmit,
         formState:{
             errors
         }
-    }=useForm<FieldValues>({
-        defaultValues: {
-        name: '',
-        email:'',
-        password:''
+    } =useForm<FieldValues>({
+        defaultValues:{
+            name:'',
+            email:'',
+            password:''
         }
+        
     })
-const onSubmit : SubmitHandler<FieldValues>=(data)=>{
-    setIsLoading(true);
 
-    if (variant=='REGISTER'){
-        //Axios register
-}
-    if (variant=='LOGIN'){
-        //NextAuth signin
+    const socialAction = (action: string) => {
+        setIsLoading(true);
+
+        signIn(action,{ redirect:false })
+        .then((callback)=>{
+          if (callback?.error){
+            toast.error('invalid credentials');
+          }
+          if (callback?.ok && !callback?.error){
+            toast.success('Logged in')
+          }
+        })
+        .finally(()=>setIsLoading(false));
     }
-}
+     
+    const onSubmit: SubmitHandler<FieldValues> = (data)=>{
+      setIsLoading(true);
+      if (variant==='REGISTER'){ 
+         //axios register 
+          axios.post("/api/register",data)
+          .then(()=>signIn('credentials',data))
+          .catch(()=> toast.error('something went wrong'))
+          .finally(()=> setIsLoading(false));
 
-const socialAction = (action:string)=>{
-    setIsLoading(true);
-    //next Auth social sign in
-}
-    return (
-        <div
-        className="
-        mt-8
-        sm:mx-auto
-        sm:w-full
-        sm:max-w-md">
-
-
-        <div
-        className="
+      }
+      if (variant=='LOGIN'){
+        // next-auth sign-in
+        signIn('credentials',{
+          ...data,
+          redirect: false
+        })
+        .then((callback)=>{
+          if (callback?.error){
+            toast.error('invalid credentials')
+          }
+          if (callback?.ok && !callback?.error)
+          {
+            toast.success('Loged in')
+            router.push('/users')
+          }
+        })
+        .finally(()=> setIsLoading(false))
+      }
+    }
+    return(
+    <div className="
+    mt-8
+    sm:mx-auto
+    sm:w-full
+    sm:max-w-md">
+        <div className="
         bg-white
         px-4
         py-8
-        shadow   
+        shadow
         sm:rounded-lg
-        sm:px-10">   
-        {/* --tw-shadow: This is a CSS custom property (variable) that defines the values for a generic shadow effect. It specifies two shadow layers: the first layer has a spread of 3px and the second layer has a spread of 2px, both with the color rgb(0 0 0 / 0.1) (10% opacity black). This creates a subtle shadow effect.--tw-shadow-colored: This is another custom property that defines a shadow effect similar to --tw-shadow, but it uses the custom property --tw-shadow-color to determine the shadow color.box-shadow: This is the CSS property that applies the shadow effect to an element. It uses several custom properties (--tw-ring-offset-shadow, --tw-ring-shadow, and --tw-shadow) to set the shadow properties. If these custom properties are not defined, it falls back to 0 0 #0000, effectively removing any shadow. */}
-
-        <form
-        className="space-y-6"
-        onSubmit={handleSubmit(onSubmit)}>
-
-        {variant =='REGISTER' && (
+        sm:px-10">
+            <form 
+            className="space-y-6"
+            onSubmit={handleSubmit(onSubmit)} >
+            {variant== 'REGISTER' &&(
+              <Input 
+              id='name' 
+              label='Name' 
+              register={register}
+              errors={errors}
+              disabled={IsLoading}/>
+            )}
             <Input 
-                id='name' 
-                label='Name' 
-                register={register} 
-                errors={errors}/>
-        )}
-
-        <Input 
-            id='email' 
-            label='Email Address' 
-            register={register} 
-            errors={errors}/>
-
-        <Input 
-            id='password' 
-            label='Password' 
-            register={register} 
-            errors={errors}/>
-        
-        <div>
-            <Button
-                disabled={isLoading}
+              id='email' 
+              label='Email adress' 
+              type='email' 
+              register={register}
+              errors={errors}
+              disabled={IsLoading}/>
+            <Input 
+              id='password' 
+              label='Password'
+              type="password" 
+              register={register}
+              errors={errors}
+              disabled={IsLoading}/>
+            <div>
+                <Button
+                disabled={IsLoading}
                 fullWidth
-                type='submit'
-                >
-
-                {variant =='LOGIN' ? 'sign-in' : 'Register'}
-            </Button>
-        </div>
-        </form>
-        <div className="mt-6">
-            <div className="relative">
-                <div className="absolute
-                inset-0
-                flex
-                items-center">
-                    <div className="w-full 
-                    border-t
+                type='submit'>
+                    {variant== 'LOGIN' ? 'Sign in':'Register'}
+                </Button>
+            </div>
+            </form>
+            <div className="mt-6">
+                <div className="relative">
+                    <div className="
+                    absolute
+                    inset-0
+                    flex
+                    items-center">
+                      <div className="
+                      w-full border-t
                     border-gray-300"/>
-                        </div>
-                        <div className="
-                        relative 
-                        flex 
-                        justify-center 
-                        text-sm">
-                            <span className="bg-white 
-                            px-2
-                            text-gray-500">
-                                or continue
-                            </span>
+                    </div>
+                    <div className="
+                    relative
+                    flex
+                    justify-center
+                    text-sm">
+                        <span className="
+                        bg-white
+                        px-2
+                        text-gray-500">
+                            or continue with
+
+                        </span>
+
+                    </div>
+
+                </div>
+                  <div className="
+                  mt-6
+                  flex
+                  gap-2
+                  ">
+                    <AuthSocialButton
+                       icon={BsGithub}
+                       onClick={()=> socialAction('github')}/>
+
+                    <AuthSocialButton
+                       icon={BsGoogle}
+                       onClick={()=> socialAction('google')}/>
+
+
+                  </div>
+            </div>
+            <div className="
+            flex
+            gap-2
+            justify-center
+            text-sm
+            mt-6
+            px-2
+            text-gray-500">
+                <div>
+                   {variant=="LOGIN" ? 'New to Messenger?' : 'Already have an account?'} 
+                </div>
+                <div
+                onClick={togglevariant}
+                className="underline cursor-pointer">
+                    {variant=='LOGIN'? 'create an account':'login' }
                 </div>
             </div>
-            <div className="mt-6 flex gap-2">
-                        <AuthSocialButton
-                        icon={BsGithub}
-                        onClick ={() => socialAction('github')}/>
-
-                        <AuthSocialButton
-                        icon={BsGoogle}
-                        onClick ={() => socialAction('google')}/>
-            </div>
-        </div>
-        <div className="
-        flex
-        gap-2
-        justify-center
-        text-sm
-        mt-6
-        px-2
-        text-gray-500">
-            <div>
-                {variant=='LOGIN'? 'New to Messemger':'Already have an account?'}    
-            </div>
-            <div
-            onClick={toggleVariant}
-            className="underline cursor-pointer">
-                {variant=='LOGIN'? 'Create an account': 'login'}
-            </div>
-
         </div>
     </div>
-</div>
-    );
-}
+)}
 export default AuthForm
