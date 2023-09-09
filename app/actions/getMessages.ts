@@ -17,6 +17,7 @@ const getMessages = async (
             }
 
         });
+        return messages
 } catch(error:any){
     return [];
 }

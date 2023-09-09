@@ -30,7 +30,7 @@ const ConversationBox: React.FC<ConversationBoxProps>= ({
 
     const handleClick = useCallback(() =>{
         router.push(`/conversations/${data.id}`);
-    },[data.id,router]);
+    },[data,router]);
 
     const lastMessage = useMemo(()=>{
         const messages = data.messages || [];
@@ -51,7 +51,7 @@ const ConversationBox: React.FC<ConversationBoxProps>= ({
     if (!userEmail){
         return false
     }
-    return seenArray.filter((user)=>user.email==userEmail).length!=0;
+    return seenArray.filter((user)=>user.email==userEmail).length!==0;
     },[userEmail,lastMessage]);
 
     const lastMessageText =useMemo(()=>{
@@ -59,7 +59,7 @@ const ConversationBox: React.FC<ConversationBoxProps>= ({
             return 'sent an image';
         }
         if(lastMessage?.body){
-            return lastMessage.body;
+            return lastMessage?.body;
         }
         
         return "started a conversation";
