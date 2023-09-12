@@ -1,6 +1,6 @@
 import getCurrentUser from "@/app/actions/getCurrentUser";
 import { NextResponse } from "next/server";
-
+import prisma from "@/app/libs/prismadb";
 interface IParams {
     conversationId?: string;
 }
@@ -18,6 +18,27 @@ export async function DELETE(
             return new NextResponse('unauthorized',{status:500})
         }
 
+        const existingConversation = await prisma.conversation.findUnique({
+            where:{
+                id:conversationId
+            },
+            include:{
+                users:true
+            }
+        });
+        if(!existingConversation){
+            return new NextResponse('Invalid Id',{status:400}) 
+        }
+
+        const deletedConversation= await prisma.conversation.deleteMany({
+            where:{
+                id:conversationId,
+                userIds:{
+                    hasSome:[currentUser.id]
+                }
+            }
+        });
+        return NextResponse.json(deletedConversation);
     } catch(error:any){
         console.log(error,'ERROR_CONVERSATION_DELETE')
         return new NextResponse('internal error',{status:500})
