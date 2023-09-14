@@ -5,13 +5,13 @@ import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 
 import {BsGithub, BsGoogle} from 'react-icons/bs'
 import axios from "axios";
-import Input from "@/app/components/inputs/Input";
 import Button from "@/app/components/Button";
 import AuthSocialButton from "./AuthSocialButton";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Input from "@/app/components/inputs/Input";
 
 type Variant = 'LOGIN'| 'REGISTER';
 
